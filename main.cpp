@@ -2,12 +2,19 @@
 #include <iostream>
 #include <ctime>
 #include "Sprites.hpp"
+#include <random>
 
 
 
 //=============================================
 //--------------STRUCTS------------------------
 //=============================================
+
+struct Coordinates
+{
+    int x;
+    int y;
+};
 
 struct ParallaxLayer
 {
@@ -36,6 +43,18 @@ struct ParallaxLayer
     }
 };
 
+struct Tiles
+{
+    sf::Sprite sprite;
+    Coordinates coord;
+    float type;
+    
+
+    Tiles(const sf::Sprite& s, Coordinates c, float t)
+        : sprite(s), coord(c), type(t)  {
+    }
+};
+
 //===========================================================================
 //------------------------STATES---------------------------------------------
 //===========================================================================
@@ -54,21 +73,118 @@ ParallaxLayer parallaxCloudsTwo(texture_cloudsTwo, 75.0f);
 ParallaxLayer parallaxBackCheck(texture_checkBack, 125.0f);
 
 bool startQuit{ 0 };
-
+std::vector<Tiles> tilelist;
 
 //===========================================================================
 //------------------------FUNCIONS-------------------------------------------
 //===========================================================================
+Tiles tileGenerator(Coordinates coord) {
+    int getRandomTile= rand() % 9;
+    float generateTileType = 0;
+    sf::Sprite generateSprite = purpleTile;
+    float generatecoordx = coord.x;
+    float generatecoordy = coord.y;
+
+    if (getRandomTile == 0) {
+        generateSprite = purpleTile;
+        generateTileType = 0;
+    }
+    if (getRandomTile == 1) {
+        generateSprite = brownTile;
+        generateTileType = 1;
+
+    }
+    if (getRandomTile == 2) {
+        generateSprite = tealTile;
+        generateTileType = 2;
+
+    }
+    if (getRandomTile == 3) {
+        generateSprite = orangeTile;
+        generateTileType = 3;
+
+    }
+    if (getRandomTile == 4) {
+        generateSprite = greyTile;
+        generateTileType = 4;
+
+    }
+    if (getRandomTile == 5) {
+        generateSprite = mintTile;
+        generateTileType = 5;
+
+    }
+    if (getRandomTile == 6) {
+        generateSprite = yellowTile;
+        generateTileType = 6;
+
+    }
+    if (getRandomTile == 7) {
+        generateSprite = blackTile;
+        generateTileType = 7;
+
+    }
+    if (getRandomTile == 8) {
+        generateSprite = greenTile;
+        generateTileType = 8;
+
+    }
+    generateSprite.setPosition({ generatecoordx,generatecoordy });
+    return Tiles(generateSprite, coord, generateTileType);
+    
+}
+
+void initTiles() {
+    tilelist.clear();
+    int currentTileIndex = 0;
+    int prevTile = -1;
+    int prePrevTile = -2;
+    
+    for (int y = 60; y <= 900; y += 120) {
+        for (int x = 480; x <= 1320; x += 120) {
+
+            Coordinates coord = { x, y };
+            if (prevTile != prePrevTile){
+            tilelist.emplace_back(tileGenerator(coord));
+            prePrevTile = prevTile;
+            prevTile = tilelist[currentTileIndex].type;
+            currentTileIndex += 1;
+            std::cout << prePrevTile << "\n";
+            std::cout << prevTile << "\n";
+
+            }
+            if (prevTile == prePrevTile) {
+                tilelist.emplace_back(tileGenerator(coord));
+                while (tilelist[currentTileIndex].type == prevTile) {
+                    tilelist.pop_back();
+                    tilelist.emplace_back(tileGenerator(coord));
+                }
+                prePrevTile = prevTile;
+                prevTile = tilelist[currentTileIndex].type;
+                currentTileIndex += 1;
+                std::cout << prePrevTile << "\n";
+                std::cout << prevTile << "\n";
+            }
+        }
+    }
+}
+void drawTiles(sf::RenderWindow& window, const std::vector<Tiles>& tiles)
+{
+    for (const Tiles& tile : tilelist) {
+        window.draw(tile.sprite);
+    }
+}
 
 
 int main()
 {
-    auto window = sf::RenderWindow(sf::VideoMode({ 1915u, 1075u }), "MOYOU");
+    auto window = sf::RenderWindow(sf::VideoMode({ 1920u, 1080u }), "MOYOU");
     window.setFramerateLimit(144);
     window.setPosition({ -8,0 });
-    sf::View gameView(sf::FloatRect({ 0.0f, 0.0f }, { 1925.f, 1085.f }));
+    sf::View gameView(sf::FloatRect({ 0.0f, 0.0f }, { 1920.f, 1080.f }));
 //---------------------------------------------------------------------------
     sf::Clock clock;
+    srand(time(0));
  //---------------------------------------------------------------------------
 
 
@@ -110,7 +226,10 @@ int main()
 //---------------------------/Start-Menu-----------------------------------------------
 //====================================================================================
 //---------------------------Main-Game-----------------------------------------------
-// 
+                if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
+                    initTiles();
+                }
+
 //--------------------------/Main-Game-----------------------------------------------
 
                 
@@ -174,7 +293,9 @@ int main()
         parallaxClouds.draw(window);
         parallaxCloudsTwo.draw(window);
         window.draw(gameBoard);
+        drawTiles(window, tilelist);
         }
+
 
         window.display();
     }
