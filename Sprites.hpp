@@ -29,16 +29,16 @@ inline const sf::IntRect yellowTileRect({ 720, 0 }, { 120, 120 });
 inline const sf::IntRect blackTileRect({ 840, 0 }, { 120, 120 });
 inline const sf::IntRect greenTileRect({ 960, 0 }, { 120, 120 });
 inline const sf::IntRect whiteTileRect({ 1080, 0 }, { 120, 120 });
-inline const sf::IntRect BG1TileRect({ 0, 0 }, { 120, 120 });
-inline const sf::IntRect BG2TileRect({ 120, 0 }, { 120, 120 });
-inline const sf::IntRect BG3TileRect({ 240, 0 }, { 120, 120 });
-inline const sf::IntRect BG4TileRect({ 360, 0 }, { 120, 120 });
-inline const sf::IntRect swapTileRect({ 480, 0 }, { 120, 120 });
-inline const sf::IntRect targetTileRect({ 600, 0 }, { 120, 120 });
-inline const sf::IntRect selectTileRect({ 720, 0 }, { 120, 120 });
-inline const sf::IntRect vertTileRect({ 840, 0 }, { 120, 120 });
-inline const sf::IntRect horzTileRect({ 960, 0 }, { 120, 120 });
-inline const sf::IntRect crossTileRect({ 1080, 0 }, { 120, 120 });
+inline const sf::IntRect BG1TileRect({ 0, 120 }, { 120, 120 });
+inline const sf::IntRect BG2TileRect({ 120, 120 }, { 120, 120 });
+inline const sf::IntRect BG3TileRect({ 240, 120 }, { 120, 120 });
+inline const sf::IntRect BG4TileRect({ 360, 120 }, { 120, 120 });
+inline const sf::IntRect swapTileRect({ 480, 120 }, { 120, 120 });
+inline const sf::IntRect targetTileRect({ 600, 120 }, { 120, 120 });
+inline const sf::IntRect selectTileRect({ 720, 120 }, { 120, 120 });
+inline const sf::IntRect vertTileRect({ 840, 120 }, { 120, 120 });
+inline const sf::IntRect horzTileRect({ 960, 120 }, { 120, 120 });
+inline const sf::IntRect crossTileRect({ 1080, 120 }, { 120, 120 });
 
 //--------------------controller-mockup--200x200px--------------------
 inline const sf::IntRect controllerRect({ 0, 240 }, { 200, 200 });

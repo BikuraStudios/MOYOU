@@ -12,8 +12,8 @@
 
 struct Coordinates
 {
-    int x;
-    int y;
+    float x;
+    float y;
 };
 
 struct ParallaxLayer
@@ -53,14 +53,19 @@ struct Tiles
     Tiles(const sf::Sprite& s, Coordinates c, float t)
         : sprite(s), coord(c), type(t)  {
     }
+
+    void draw(sf::RenderWindow& window)
+    {
+        window.draw(sprite);
+    }
 };
 
 //===========================================================================
 //------------------------STATES---------------------------------------------
 //===========================================================================
 bool startUpState{ 0 };
-bool startMenuState{ 1 };
-bool mainGameState{ 0 };
+bool startMenuState{ 0 };
+bool mainGameState{ 1 };
 
 
 
@@ -74,6 +79,10 @@ ParallaxLayer parallaxBackCheck(texture_checkBack, 125.0f);
 
 bool startQuit{ 0 };
 std::vector<Tiles> tilelist;
+int selectorCurrentIndex{ 27 };
+int swapIndex{ 64 };
+
+std::vector<Coordinates> coordlist = {};
 
 //===========================================================================
 //------------------------FUNCIONS-------------------------------------------
@@ -134,45 +143,134 @@ Tiles tileGenerator(Coordinates coord) {
     
 }
 
+
+void generateCoordlist() {
+    coordlist.clear();
+    for (float y = 60; y <= 900; y += 120) {
+        for (float x = 480; x <= 1320; x += 120) {
+            coordlist.push_back({ x, y });
+        }
+    }
+}
+
+
 void initTiles() {
     tilelist.clear();
     int currentTileIndex = 0;
     int prevTile = -1;
     int prePrevTile = -2;
+    int prev8Tile = -8;
+    int prev16Tile = -16;
     
-    for (int y = 60; y <= 900; y += 120) {
-        for (int x = 480; x <= 1320; x += 120) {
+    for (float y = 60; y <= 900; y += 120) {
+        for (float x = 480; x <= 1320; x += 120) {
 
             Coordinates coord = { x, y };
-            if (prevTile != prePrevTile){
+            if (currentTileIndex - 8 >= 0) {
+                prev8Tile = tilelist[currentTileIndex - 8].type;
+                if (currentTileIndex - 16 >= 0) {
+                    prev16Tile = tilelist[currentTileIndex - 8].type;
+                }
+            }
+            if ((prevTile != prePrevTile) && (prev8Tile != prev16Tile)) {
             tilelist.emplace_back(tileGenerator(coord));
+
             prePrevTile = prevTile;
             prevTile = tilelist[currentTileIndex].type;
+            
             currentTileIndex += 1;
-            std::cout << prePrevTile << "\n";
-            std::cout << prevTile << "\n";
+            
 
             }
-            if (prevTile == prePrevTile) {
+            if ((prevTile == prePrevTile) || (prev8Tile == prev16Tile)) {
                 tilelist.emplace_back(tileGenerator(coord));
                 while (tilelist[currentTileIndex].type == prevTile) {
+                    tilelist.pop_back();
+                    tilelist.emplace_back(tileGenerator(coord));
+                }
+                while (tilelist[currentTileIndex].type == prev8Tile) {
                     tilelist.pop_back();
                     tilelist.emplace_back(tileGenerator(coord));
                 }
                 prePrevTile = prevTile;
                 prevTile = tilelist[currentTileIndex].type;
                 currentTileIndex += 1;
-                std::cout << prePrevTile << "\n";
-                std::cout << prevTile << "\n";
+                
             }
         }
     }
 }
+
+void tilelistValidate() {
+    while (tilelist.size() > 64){
+        tilelist.pop_back();
+    }
+}
+
 void drawTiles(sf::RenderWindow& window, const std::vector<Tiles>& tiles)
 {
-    for (const Tiles& tile : tilelist) {
+    for (const Tiles& tile : tiles) {
+        
         window.draw(tile.sprite);
     }
+}
+
+void moveSelector(int direction) {
+    //------------(up)----------------------(-8)---------
+    //----(left)----------(right)-----(-1)------------(1)                
+    //-----------(down)----------------------(8)--------
+    if (direction == (-8)) {
+        if (selectTile.getGlobalBounds().position.y > 180) {
+            selectTile.setPosition({ selectTile.getGlobalBounds().position.x, selectTile.getGlobalBounds().position.y - 120 });
+            selectorCurrentIndex += direction;
+        }
+    }
+    if (direction == (8)) {
+        if (selectTile.getGlobalBounds().position.y < 880) {
+            selectTile.setPosition({ selectTile.getGlobalBounds().position.x, selectTile.getGlobalBounds().position.y + 120 });
+            selectorCurrentIndex += direction;
+
+        }
+    }
+    if (direction == (1)) {
+        if (selectTile.getGlobalBounds().position.x < 1320) {
+            selectTile.setPosition({ selectTile.getGlobalBounds().position.x + 120, selectTile.getGlobalBounds().position.y });
+            selectorCurrentIndex += direction;
+
+        }
+    }
+    if (direction == (-1)) {
+        if (selectTile.getGlobalBounds().position.x > 600) {
+            selectTile.setPosition({ selectTile.getGlobalBounds().position.x - 120, selectTile.getGlobalBounds().position.y });
+            selectorCurrentIndex += direction;
+
+        }
+    }
+}
+
+void placeHolder(float position) {
+    targetTile.setPosition({ selectTile.getPosition().x,selectTile.getPosition().y});
+}
+
+void tileSwap(int selector, int swaptile) {
+    std::swap(tilelist[selector], tilelist[swaptile]);
+    tilelist[selector].coord.x = coordlist[selector].x;
+    tilelist[selector].coord.y = coordlist[selector].y;
+    tilelist[swaptile].coord.x = coordlist[swaptile].x;
+    tilelist[swaptile].coord.y = coordlist[swaptile].y;
+    tilelist[selector].sprite.setPosition({tilelist[selector].coord.x, tilelist[selector].coord.y});
+    tilelist[swaptile].sprite.setPosition({ tilelist[swaptile].coord.x, tilelist[swaptile].coord.y });
+    
+
+}
+
+void setTiles() {
+    for (int i = 0; i < coordlist.size();i++) {
+        tilelist[i].coord.x = coordlist[i].x;
+        tilelist[i].coord.y = coordlist[i].y;
+        tilelist[i].sprite.setPosition({ coordlist[i].x, coordlist[i].y });
+    }
+    
 }
 
 
@@ -182,9 +280,11 @@ int main()
     window.setFramerateLimit(144);
     window.setPosition({ -8,0 });
     sf::View gameView(sf::FloatRect({ 0.0f, 0.0f }, { 1920.f, 1080.f }));
+    selectTile.setPosition({ 841,421 });
 //---------------------------------------------------------------------------
     sf::Clock clock;
     srand(time(0));
+    generateCoordlist();
  //---------------------------------------------------------------------------
 
 
@@ -228,7 +328,97 @@ int main()
 //---------------------------Main-Game-----------------------------------------------
                 if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
                     initTiles();
+                    tilelistValidate();
+                    setTiles();
                 }
+                if ((keyPressed->scancode == sf::Keyboard::Scancode::P)) {
+                    int countup = 0;
+                    for (const auto& s : tilelist) {
+                        
+                        std::cout << "Index "<< countup << " Type: " << s.type << std::endl;
+                        countup += 1;
+                    }
+                }
+
+                //===================SELECTOR-MOVEMENT=================================
+                // ------------PRE-SELECTION-------------------------------------------
+                if ((swapIndex == 64) || (swapIndex == selectorCurrentIndex)) {
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
+                        moveSelector(-8);
+                    }
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Down)) {
+                        moveSelector(8);
+                    }
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Right)) {
+                        moveSelector(1);
+                    }
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
+                        moveSelector(-1);
+                    }
+                    if (swapIndex == 64) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
+                            placeHolder(selectorCurrentIndex);
+                            swapIndex = selectorCurrentIndex;
+                        }
+                    }
+                    if (swapIndex == selectorCurrentIndex) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
+                            swapIndex = 64;
+                        }
+                    }
+                }
+                // -------------SELECTION-------------------------------------------
+                if ((swapIndex != selectorCurrentIndex) && (swapIndex < 64) ) {
+                    if (swapIndex == (selectorCurrentIndex - 8)) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
+                            moveSelector(-8);
+                        }
+
+                    }
+                    if (swapIndex == (selectorCurrentIndex + 8)) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Down)) {
+                            moveSelector(8);
+                        }
+                    }
+                    if (swapIndex == (selectorCurrentIndex - 1)) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
+                            moveSelector(-1);
+                        }
+                    }
+                    if (swapIndex == (selectorCurrentIndex + 1)) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Right)) {
+                            moveSelector(1);
+                        }
+                    }
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+
+                        std::cout << "selectorCurrentIndex tile coord before swap:  " << tilelist[selectorCurrentIndex].coord.x << " , " << tilelist[selectorCurrentIndex].coord.y << "\n";
+                        std::cout << "swapIndex tile coord before swap:  " << tilelist[swapIndex].coord.x << " , " << tilelist[swapIndex].coord.y << "\n";
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+                        std::cout << "selectorCurrentIndex tile type before swap:  " << tilelist[selectorCurrentIndex].type << "\n";
+                        std::cout << "swapIndex tile type before swap:  " << tilelist[swapIndex].type << "\n";
+                        tileSwap(selectorCurrentIndex, swapIndex);
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+
+                        std::cout << "selectorCurrentIndex tile coord after swap:  " << tilelist[selectorCurrentIndex].coord.x << " , " << tilelist[selectorCurrentIndex].coord.y << "\n";
+                        std::cout << "swapIndex tile coord after swap:  " << tilelist[swapIndex].coord.x << " , " << tilelist[swapIndex].coord.y << "\n";
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+                        std::cout << "selectorCurrentIndex tile type after swap:  " << tilelist[selectorCurrentIndex].type << "\n";
+                        std::cout << "swapIndex tile type after swap:  " << tilelist[swapIndex].type << "\n";
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+                        std::cout << "--------------------------------------------------------------------------------------------\n";
+                        setTiles();
+                        swapIndex = 64;
+                    }
+                        
+
+
+                }
+                std::cout << "Selector Current Index: " << selectorCurrentIndex << "\n";
+                std::cout << "Swap Index: " << swapIndex << "\n";
+                
+                //===================/SELECTOR-MOVEMENT=================================
 
 //--------------------------/Main-Game-----------------------------------------------
 
@@ -293,7 +483,13 @@ int main()
         parallaxClouds.draw(window);
         parallaxCloudsTwo.draw(window);
         window.draw(gameBoard);
+        
         drawTiles(window, tilelist);
+        if ((swapIndex < 64) && (swapIndex!=selectorCurrentIndex)){
+            window.draw(targetTile);
+        }
+        window.draw(selectTile);
+
         }
 
 
