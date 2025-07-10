@@ -266,7 +266,6 @@ void tileSwap(int selector, int swaptile) {
 
 }
 
-//--------------------------------MATCH CHECK----------------------------------------
 
 
 int matchRecursionUp(int index) {
@@ -325,7 +324,12 @@ int matchRecursionLeft(int index) {
     }
 }
         
-
+void erase3(std::vector <int> matchlist) {
+    for (int i = 0; i < matchlist.size(); i++) {
+        tilelist.erase(tilelist.begin() + matchlist[i]);
+        tilelist.insert(tilelist.begin() + matchlist[i], tileGenerator(coordlist[matchlist[i]]));
+    }
+}
 
 
 void match3check(int index) {
@@ -342,9 +346,17 @@ void match3check(int index) {
     auto final = std::unique(matchlisthorz.begin(), matchlisthorz.end());
     matchlisthorz.erase(final, matchlisthorz.end());
     
+    if (matchlisthorz.size() >= 3) {
+        erase3(matchlisthorz);
+    }
+    if (matchlistvert.size() >= 3) {
+        erase3(matchlistvert);
+    }
 
 }
-//================================================================================================
+
+
+
 
 void setTiles() {
     for (int i = 0; i < coordlist.size();i++) {
@@ -355,6 +367,12 @@ void setTiles() {
     
 }
 
+void AlwaysBeChecking() {
+    for (int i = 0; i < 63; i++) {
+        match3check(i);
+
+    }
+}
 
 int main()
 {
@@ -412,6 +430,7 @@ int main()
                     initTiles();
                     tilelistValidate();
                     setTiles();
+                    AlwaysBeChecking();
                 }
                 if ((keyPressed->scancode == sf::Keyboard::Scancode::P)) {
                     int countup = 0;
@@ -443,7 +462,7 @@ int main()
                             swapIndex = selectorCurrentIndex;
                         }
                     }
-                    if (swapIndex == selectorCurrentIndex) {
+                    if (swapIndex != 64) {
                         if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
                             swapIndex = 64;
                         }
@@ -451,6 +470,11 @@ int main()
                 }
                 // -------------SELECTION-------------------------------------------
                 if ((swapIndex != selectorCurrentIndex) && (swapIndex < 64) ) {
+                    if (swapIndex != 64) {
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
+                            swapIndex = 64;
+                        }
+                    }
                     if (swapIndex == (selectorCurrentIndex - 8)) {
                         if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
                             moveSelector(-8);
