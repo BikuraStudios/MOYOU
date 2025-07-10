@@ -64,10 +64,10 @@ struct Tiles
 //------------------------STATES---------------------------------------------
 //===========================================================================
 bool startUpState{ 0 };
-bool startMenuState{ 0 };
-bool mainGameState{ 1 };
+bool startMenuState{ 1 };
+bool mainGameState{ 0 };
 
-
+bool debug{ 1 };
 
 //===========================================================================
 //------------------------VARIABLES------------------------------------------
@@ -83,6 +83,8 @@ int selectorCurrentIndex{ 27 };
 int swapIndex{ 64 };
 
 std::vector<Coordinates> coordlist = {};
+std::vector<int> matchlistvert = {};
+std::vector<int> matchlisthorz = {};
 
 //===========================================================================
 //------------------------FUNCIONS-------------------------------------------
@@ -264,6 +266,86 @@ void tileSwap(int selector, int swaptile) {
 
 }
 
+//--------------------------------MATCH CHECK----------------------------------------
+
+
+int matchRecursionUp(int index) {
+    matchlistvert.emplace_back(index);
+    if (index - 8 < 0) {
+        return 0;
+    }
+    if (tilelist[index].type != tilelist[index - 8].type) {
+        return 0;
+    }
+    else {
+        matchRecursionUp(index - 8);
+        return 0;
+    }
+}
+
+int matchRecursionRight(int index) {
+    matchlisthorz.emplace_back(index);
+    if ((index + 1 == 8) || (index + 1 == 16) || (index + 1 == 24) || (index + 1 == 32) || (index + 1 == 40) || (index + 1 == 48) || (index + 1 == 56) || (index + 1 == 64)) {
+        return 0;
+    }
+    if (tilelist[index].type != tilelist[index + 1].type) {
+        return 0;
+    }
+    else {
+        matchRecursionRight(index + 1);
+        return 0;
+    }
+}
+
+int matchRecursionDown(int index) {
+    matchlistvert.emplace_back(index);
+    if (index + 8 > 63) {
+        return 0;
+    }
+    if (tilelist[index].type != tilelist[index + 8].type) {
+                return 0;
+            }
+    else {
+        matchRecursionDown(index + 8);
+        return 0;
+            }
+        }
+
+int matchRecursionLeft(int index) {
+    matchlisthorz.emplace_back(index);
+    if ((index - 1 == -1) || (index - 1 == 7) || (index - 1 == 15) || (index - 1 == 23) || (index - 1 == 31) || (index - 1 == 39) || (index - 1 == 47) || (index - 1 == 55)) {
+        return 0;
+    }
+    if (tilelist[index].type != tilelist[index - 1].type) {
+        return 0;
+    }
+    else {
+        matchRecursionLeft(index - 1);
+        return 0;
+    }
+}
+        
+
+
+
+void match3check(int index) {
+    matchlistvert.clear();
+    matchlisthorz.clear();
+    matchRecursionUp(index);
+    matchRecursionDown(index);
+    std::sort(matchlistvert.begin(), matchlistvert.end());
+    auto last = std::unique(matchlistvert.begin(), matchlistvert.end());
+    matchlistvert.erase(last, matchlistvert.end());
+    matchRecursionRight(index);
+    matchRecursionLeft(index);
+    std::sort(matchlisthorz.begin(), matchlisthorz.end());
+    auto final = std::unique(matchlisthorz.begin(), matchlisthorz.end());
+    matchlisthorz.erase(final, matchlisthorz.end());
+    
+
+}
+//================================================================================================
+
 void setTiles() {
     for (int i = 0; i < coordlist.size();i++) {
         tilelist[i].coord.x = coordlist[i].x;
@@ -391,23 +473,24 @@ int main()
                         }
                     }
                     if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
-
-                        std::cout << "selectorCurrentIndex tile coord before swap:  " << tilelist[selectorCurrentIndex].coord.x << " , " << tilelist[selectorCurrentIndex].coord.y << "\n";
-                        std::cout << "swapIndex tile coord before swap:  " << tilelist[swapIndex].coord.x << " , " << tilelist[swapIndex].coord.y << "\n";
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
-                        std::cout << "selectorCurrentIndex tile type before swap:  " << tilelist[selectorCurrentIndex].type << "\n";
-                        std::cout << "swapIndex tile type before swap:  " << tilelist[swapIndex].type << "\n";
+                        
                         tileSwap(selectorCurrentIndex, swapIndex);
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
 
-                        std::cout << "selectorCurrentIndex tile coord after swap:  " << tilelist[selectorCurrentIndex].coord.x << " , " << tilelist[selectorCurrentIndex].coord.y << "\n";
-                        std::cout << "swapIndex tile coord after swap:  " << tilelist[swapIndex].coord.x << " , " << tilelist[swapIndex].coord.y << "\n";
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
-                        std::cout << "selectorCurrentIndex tile type after swap:  " << tilelist[selectorCurrentIndex].type << "\n";
-                        std::cout << "swapIndex tile type after swap:  " << tilelist[swapIndex].type << "\n";
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
-                        std::cout << "--------------------------------------------------------------------------------------------\n";
+
+                        match3check(selectorCurrentIndex);
+                        for (const auto& num : matchlisthorz) {
+                            std::cout << "Horizontal Matching Tiles: Selector:  " << num << "\n";
+                        }
+                        for (const auto& num : matchlistvert) {
+                            std::cout << "Vertical Matching Tiles: Selector:  " << num << "\n";
+                        }
+                        match3check(swapIndex);
+                        for (const auto& num : matchlisthorz) {
+                            std::cout << "Horizontal Matching Tiles: Swapped Tile:  " << num << "\n";
+                        }
+                        for (const auto& num : matchlistvert) {
+                            std::cout << "Vertical Matching Tiles: Swapped Tile:  " << num << "\n";
+                        }
                         setTiles();
                         swapIndex = 64;
                     }
