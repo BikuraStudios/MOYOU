@@ -66,6 +66,7 @@ struct Tiles
 bool startUpState{ 0 };
 bool startMenuState{ 1 };
 bool mainGameState{ 0 };
+bool gameOverState{ 0 };
 
 bool debug{ 1 };
 
@@ -85,6 +86,21 @@ int swapIndex{ 64 };
 std::vector<Coordinates> coordlist = {};
 std::vector<int> matchlistvert = {};
 std::vector<int> matchlisthorz = {};
+
+bool vertmatchsel{ 0 };
+bool horzmatchsel{ 0 };
+bool vertmatchswap{ 0 };
+bool horzmatchswap{ 0 };
+
+bool canceldraw{ 0 };
+bool confirmdraw{ 0 };
+bool displayedButton{ 0 };
+sf::Clock inputTimer;
+
+int freeMoves{ 3 };
+
+//----------------controller------------------------------------------------
+
 
 //===========================================================================
 //------------------------FUNCIONS-------------------------------------------
@@ -217,10 +233,20 @@ void drawTiles(sf::RenderWindow& window, const std::vector<Tiles>& tiles)
     }
 }
 
+bool canMoveInput()
+{
+    if (inputTimer.getElapsedTime().asMilliseconds() > 350) {
+        inputTimer.restart();
+        return true;
+    }
+    return false;
+}
+
 void moveSelector(int direction) {
     //------------(up)----------------------(-8)---------
     //----(left)----------(right)-----(-1)------------(1)                
     //-----------(down)----------------------(8)--------
+    
     if (direction == (-8)) {
         if (selectTile.getGlobalBounds().position.y > 180) {
             selectTile.setPosition({ selectTile.getGlobalBounds().position.x, selectTile.getGlobalBounds().position.y - 120 });
@@ -323,11 +349,39 @@ int matchRecursionLeft(int index) {
         return 0;
     }
 }
-        
+
+int tileDrop(int index) {
+    if (index - 8 < 0) {
+        tileGenerator(coordlist[index]);
+        std::cout << "tile generated in row 1, exit tileDrop \n";
+        return 0;
+    }
+    if  (index - 8 >= 0) {
+        tileSwap(index, (index - 8));
+        std::cout << "tile swapped, tileDrop one level deeper \n";
+
+        tileDrop(index - 8);
+    }
+}
+
+void setTiles() {
+    for (int i = 0; i < coordlist.size();i++) {
+        tilelist[i].coord.x = coordlist[i].x;
+        tilelist[i].coord.y = coordlist[i].y;
+        tilelist[i].sprite.setPosition({ coordlist[i].x, coordlist[i].y });
+    }
+
+}
+
 void erase3(std::vector <int> matchlist) {
     for (int i = 0; i < matchlist.size(); i++) {
+        tilelist[matchlist[i]].sprite = whiteTile;
+        setTiles();
+
         tilelist.erase(tilelist.begin() + matchlist[i]);
+
         tilelist.insert(tilelist.begin() + matchlist[i], tileGenerator(coordlist[matchlist[i]]));
+        tileDrop(matchlist[i]);
     }
 }
 
@@ -358,14 +412,7 @@ void match3check(int index) {
 
 
 
-void setTiles() {
-    for (int i = 0; i < coordlist.size();i++) {
-        tilelist[i].coord.x = coordlist[i].x;
-        tilelist[i].coord.y = coordlist[i].y;
-        tilelist[i].sprite.setPosition({ coordlist[i].x, coordlist[i].y });
-    }
-    
-}
+
 
 void AlwaysBeChecking() {
     for (int i = 0; i < 63; i++) {
@@ -381,16 +428,27 @@ int main()
     window.setPosition({ -8,0 });
     sf::View gameView(sf::FloatRect({ 0.0f, 0.0f }, { 1920.f, 1080.f }));
     selectTile.setPosition({ 841,421 });
+    heart.setPosition({ 261,590 });
+    heart2.setPosition({ 291,590 });
+    heart3.setPosition({ 320,590 });
+    controllerSprite.setPosition({ 122,744 });
+    confirmSprite.setPosition({ 122,744 });
+    cancelSprite.setPosition({ 122,744 });
 //---------------------------------------------------------------------------
     sf::Clock clock;
+    float inputTime = inputTimer.restart().asMilliseconds();
     srand(time(0));
     generateCoordlist();
  //---------------------------------------------------------------------------
 
 
+    sf::Joystick::update();
 
     while (window.isOpen())
     {
+        sf::Joystick::update();
+        
+        
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -411,7 +469,6 @@ int main()
                 if (startMenuState){
                 if ((keyPressed->scancode == sf::Keyboard::Scancode::Up) || (keyPressed->scancode == sf::Keyboard::Scancode::Down)){
                     startQuit = !startQuit;
-                    std::cout << startQuit << "\n";
                 }
                 if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
                     if (!startQuit) {
@@ -422,112 +479,154 @@ int main()
                         window.close();
                     }
                 }
+
                 }
 //---------------------------/Start-Menu-----------------------------------------------
 //====================================================================================
 //---------------------------Main-Game-----------------------------------------------
-                if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
-                    initTiles();
-                    tilelistValidate();
-                    setTiles();
-                    AlwaysBeChecking();
-                }
-                if ((keyPressed->scancode == sf::Keyboard::Scancode::P)) {
-                    int countup = 0;
-                    for (const auto& s : tilelist) {
-                        
-                        std::cout << "Index "<< countup << " Type: " << s.type << std::endl;
-                        countup += 1;
-                    }
-                }
+                if (mainGameState = 1) {
 
-                //===================SELECTOR-MOVEMENT=================================
-                // ------------PRE-SELECTION-------------------------------------------
-                if ((swapIndex == 64) || (swapIndex == selectorCurrentIndex)) {
-                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
-                        moveSelector(-8);
+                                       
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
+                        initTiles();
+                        tilelistValidate();
+                        setTiles();
+                        AlwaysBeChecking();
                     }
-                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Down)) {
-                        moveSelector(8);
-                    }
-                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Right)) {
-                        moveSelector(1);
-                    }
-                    if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
-                        moveSelector(-1);
-                    }
-                    if (swapIndex == 64) {
-                        if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
-                            placeHolder(selectorCurrentIndex);
-                            swapIndex = selectorCurrentIndex;
+                    if ((keyPressed->scancode == sf::Keyboard::Scancode::P)) {
+                        int countup = 0;
+                        for (const auto& s : tilelist) {
+
+                            std::cout << "Index " << countup << " Type: " << s.type << std::endl;
+                            countup += 1;
                         }
                     }
-                    if (swapIndex != 64) {
-                        if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
-                            swapIndex = 64;
-                        }
-                    }
-                }
-                // -------------SELECTION-------------------------------------------
-                if ((swapIndex != selectorCurrentIndex) && (swapIndex < 64) ) {
-                    if (swapIndex != 64) {
-                        if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
-                            swapIndex = 64;
-                        }
-                    }
-                    if (swapIndex == (selectorCurrentIndex - 8)) {
+
+                    //===================SELECTOR-MOVEMENT=================================
+                    // ------------PRE-SELECTION-------------------------------------------
+                    if ((swapIndex == 64) || (swapIndex == selectorCurrentIndex)) {
                         if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
                             moveSelector(-8);
                         }
-
-                    }
-                    if (swapIndex == (selectorCurrentIndex + 8)) {
                         if ((keyPressed->scancode == sf::Keyboard::Scancode::Down)) {
                             moveSelector(8);
                         }
-                    }
-                    if (swapIndex == (selectorCurrentIndex - 1)) {
-                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
-                            moveSelector(-1);
-                        }
-                    }
-                    if (swapIndex == (selectorCurrentIndex + 1)) {
                         if ((keyPressed->scancode == sf::Keyboard::Scancode::Right)) {
                             moveSelector(1);
                         }
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
+                            moveSelector(-1);
+                        }
+                        if (swapIndex == 64) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
+                                placeHolder(selectorCurrentIndex);
+                                swapIndex = selectorCurrentIndex;
+                                
+                            }
+                        }
+                        if (swapIndex != 64) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
+                                swapIndex = 64;
+                               
+                            }
+                        }
                     }
-                    if ((keyPressed->scancode == sf::Keyboard::Scancode::A)) {
-                        
-                        tileSwap(selectorCurrentIndex, swapIndex);
+                    // -------------SELECTION-------------------------------------------
+                    if ((swapIndex != selectorCurrentIndex) && (swapIndex < 64)) {
+                        if (swapIndex != 64) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::B)) {
+                                swapIndex = 64;
+                                
+
+                            }
+                        }
+                        if (swapIndex == (selectorCurrentIndex - 8)) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::Up)) {
+                                moveSelector(-8);
+                            }
+
+                        }
+                        if (swapIndex == (selectorCurrentIndex + 8)) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::Down)) {
+                                moveSelector(8);
+                            }
+                        }
+                        if (swapIndex == (selectorCurrentIndex - 1)) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::Left)) {
+                                moveSelector(-1);
+                            }
+                        }
+                        if (swapIndex == (selectorCurrentIndex + 1)) {
+                            if ((keyPressed->scancode == sf::Keyboard::Scancode::Right)) {
+                                moveSelector(1);
+                            }
+                        }
+                        if ((keyPressed->scancode == sf::Keyboard::Scancode::A)){
+
+                            tileSwap(selectorCurrentIndex, swapIndex);
 
 
-                        match3check(selectorCurrentIndex);
-                        for (const auto& num : matchlisthorz) {
-                            std::cout << "Horizontal Matching Tiles: Selector:  " << num << "\n";
+                            match3check(selectorCurrentIndex);
+                            if (matchlisthorz.size() >= 3) {
+                                horzmatchsel = 1;
+                            }
+                            if (matchlistvert.size() >= 3) {
+                                vertmatchsel = 1;
+                            }
+                            match3check(swapIndex);
+                            if (matchlisthorz.size() >= 3) {
+                                horzmatchswap = 1;
+                            }
+                            if (matchlistvert.size() >= 3) {
+                                vertmatchswap = 1;
+                            }
+                            if ((horzmatchsel) || (vertmatchsel) || (horzmatchswap) || (vertmatchswap)) {
+                                freeMoves = 3;
+                            }
+                            else {
+                                freeMoves -= 1;
+                                if (freeMoves == 0) {
+                                    swapIndex = 64;
+                                    freeMoves = 3;
+                                    // TODO: Make full reset function to go here once score / timer added
+                                    gameOverState = 1;
+                                    mainGameState = 0;
+                                }
+                            }
+                            horzmatchsel = 0;
+                            horzmatchswap = 0;
+                            vertmatchsel = 0;
+                            vertmatchswap = 0;
+                            setTiles();
+                            AlwaysBeChecking();
+                            swapIndex = 64;
+                            displayedButton = 0;
+                            confirmdraw = 1;
+
                         }
-                        for (const auto& num : matchlistvert) {
-                            std::cout << "Vertical Matching Tiles: Selector:  " << num << "\n";
-                        }
-                        match3check(swapIndex);
-                        for (const auto& num : matchlisthorz) {
-                            std::cout << "Horizontal Matching Tiles: Swapped Tile:  " << num << "\n";
-                        }
-                        for (const auto& num : matchlistvert) {
-                            std::cout << "Vertical Matching Tiles: Swapped Tile:  " << num << "\n";
-                        }
-                        setTiles();
-                        swapIndex = 64;
+
+
+
                     }
-                        
+                    std::cout << "Selector Current Index: " << selectorCurrentIndex << "\n";
+                    std::cout << "Swap Index: " << swapIndex << "\n";
+                    std::cout << freeMoves << "\n";
+                    
 
-
+                    //===================/SELECTOR-MOVEMENT=================================
                 }
-                std::cout << "Selector Current Index: " << selectorCurrentIndex << "\n";
-                std::cout << "Swap Index: " << swapIndex << "\n";
                 
-                //===================/SELECTOR-MOVEMENT=================================
-
 //--------------------------/Main-Game-----------------------------------------------
+//---------------------------Game-Over-----------------------------------------------
+                if (gameOverState){
+                if ((keyPressed->scancode == sf::Keyboard::Scancode::Enter)) {
+                    mainGameState = 0;
+                    startMenuState = 1;
+                    gameOverState = 0;
+                    startQuit = 0;
+                }
+                }
+//--------------------------/Game-Over-----------------------------------------------
 
                 
             
@@ -562,12 +661,26 @@ int main()
 //---------------------------------------------------------------------------------------------------------------
         }
         float deltaTime = clock.restart().asSeconds();
+        inputTime = inputTimer.getElapsedTime().asMilliseconds();
         parallaxClouds.update(deltaTime);
         parallaxBackCheck.update(deltaTime);
         parallaxCloudsTwo.update(deltaTime);
-
+        
         window.setView(gameView);
+
         window.clear();
+
+        //--------------------Pre-startup-controller-variables-----------------------------------------------------
+        float DpadX = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::PovX);
+        float DpadY = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::PovY);
+        float LSX = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X);
+        float LSY = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Y);
+        float Trig = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::Z);
+        float RSU = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::U);
+        float RSV = sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::V);
+        float NegDeadZone = -0.10;
+        float PosDeadZone = 0.10;
+        sf::Vector2f LSDefault = { 255, 183 };
 
         //--------------------STARTUP------------------------------------------------------------------------------
         
@@ -576,30 +689,215 @@ int main()
         window.draw(titleScreen);
         startHighlight.setPosition({ 790.f,590.f });
         quitHighlight.setPosition({ 790.f,765.f });
-
+        
         if (!startQuit) {            
             window.draw(startHighlight);
         }
         else {
             window.draw(quitHighlight);
         }
+        if (DpadY > PosDeadZone){
+            startQuit = 0;
+
+        }
+        if (DpadY < NegDeadZone) {
+            startQuit = 1;
+        }
+        if (sf::Joystick::isButtonPressed(0, 0)) {
+            if (!startQuit) {
+                mainGameState = 1;
+                startMenuState = 0;
+                initTiles();
+                tilelistValidate();
+                setTiles();
+                AlwaysBeChecking();
+                swapIndex = 64;
+            }
+            else {
+                window.close();
+            }
+        }
+
+
         }
 
         //-----------------Main-Game---------------------------------------------------------------------------------
-        if (mainGameState){
-        parallaxClouds.draw(window);
-        parallaxCloudsTwo.draw(window);
-        window.draw(gameBoard);
-        
-        drawTiles(window, tilelist);
-        if ((swapIndex < 64) && (swapIndex!=selectorCurrentIndex)){
-            window.draw(targetTile);
-        }
-        window.draw(selectTile);
+        if (mainGameState) {
+            //-----------------------controller-input---------------------------------------------------------------
 
+            if ((swapIndex == 64) || (swapIndex == selectorCurrentIndex)) {
+                if ((DpadY > PosDeadZone) && (canMoveInput())) {
+                    moveSelector(-8);
+                    inputTime = inputTimer.restart().asMilliseconds();
+                }
+                if ((DpadY < NegDeadZone) && (canMoveInput())) {
+                    moveSelector(8);
+                    inputTime = inputTimer.restart().asMilliseconds();
+                }
+                if ((DpadX > PosDeadZone) && (canMoveInput())) {
+                    moveSelector(1);
+                    inputTime = inputTimer.restart().asMilliseconds();
+
+                }
+                if ((DpadX < NegDeadZone) && (canMoveInput())) {
+                    moveSelector(-1);
+                    inputTime = inputTimer.restart().asMilliseconds();
+
+                }
+                if (swapIndex == 64) {
+                    if (sf::Joystick::isButtonPressed(0, 0)) {
+                        placeHolder(selectorCurrentIndex);
+                        swapIndex = selectorCurrentIndex;
+
+                    }
+                }
+                if (swapIndex != 64) {
+                    if (sf::Joystick::isButtonPressed(0, 1)) {
+                        swapIndex = 64;
+
+                    }
+                }
+            }
+
+            // -------------SELECTION-------------------------------------------
+            if ((swapIndex != selectorCurrentIndex) && (swapIndex < 64)) {
+                if (swapIndex != 64) {
+                    if (sf::Joystick::isButtonPressed(0, 1)) {
+                        swapIndex = 64;
+
+
+                    }
+                
+                
+                    if (swapIndex == (selectorCurrentIndex - 8)) {
+                        if ((DpadY > PosDeadZone) && (canMoveInput())) {
+                            moveSelector(-8);
+                            inputTime = inputTimer.restart().asMilliseconds();
+                        }
+                    }
+                    if (swapIndex == (selectorCurrentIndex + 8)) {
+                        if ((DpadY < NegDeadZone) && (canMoveInput())) {
+                            moveSelector(8);
+                            inputTime = inputTimer.restart().asMilliseconds();
+                        }
+                    }
+                    if (swapIndex == (selectorCurrentIndex - 1)) {
+                        if ((DpadX > PosDeadZone) && (canMoveInput())) {
+                            moveSelector(1);
+                            inputTime = inputTimer.restart().asMilliseconds();
+
+                        }
+                    }
+                    if (swapIndex == (selectorCurrentIndex + 1)) {
+                        if ((DpadX < NegDeadZone) && (canMoveInput())) {
+                            moveSelector(-1);
+                            inputTime = inputTimer.restart().asMilliseconds();
+
+                        }
+                    }
+                if (sf::Joystick::isButtonPressed(0, 0)) {
+
+                    tileSwap(selectorCurrentIndex, swapIndex);
+
+
+                    match3check(selectorCurrentIndex);
+                    if (matchlisthorz.size() >= 3) {
+                        horzmatchsel = 1;
+                    }
+                    if (matchlistvert.size() >= 3) {
+                        vertmatchsel = 1;
+                    }
+                    match3check(swapIndex);
+                    if (matchlisthorz.size() >= 3) {
+                        horzmatchswap = 1;
+                    }
+                    if (matchlistvert.size() >= 3) {
+                        vertmatchswap = 1;
+                    }
+                    if ((horzmatchsel) || (vertmatchsel) || (horzmatchswap) || (vertmatchswap)) {
+                        freeMoves = 3;
+                    }
+                    else {
+                        freeMoves -= 1;
+                        if (freeMoves == 0) {
+                            swapIndex = 64;
+                            freeMoves = 3;
+                            // TODO: Make full reset function to go here once score / timer added
+                            gameOverState = 1;
+                            mainGameState = 0;
+                        }
+                    }
+                    horzmatchsel = 0;
+                    horzmatchswap = 0;
+                    vertmatchsel = 0;
+                    vertmatchswap = 0;
+                    setTiles();
+                    AlwaysBeChecking();
+                    swapIndex = 64;
+                    displayedButton = 0;
+                    confirmdraw = 1;
+
+                }
+                }
+
+
+            }
+
+            //-----------------------/controller-input--------------------------------------------------------------
+
+
+            parallaxClouds.draw(window);
+            parallaxCloudsTwo.draw(window);
+            window.draw(gameBoard);
+
+            drawTiles(window, tilelist);
+            if ((swapIndex < 64) && (swapIndex != selectorCurrentIndex)) {
+                window.draw(targetTile);
+            }
+            window.draw(selectTile);
+
+            if (freeMoves >= 1) {
+                window.draw(heart);
+            }
+            if (freeMoves >= 2) {
+
+                window.draw(heart2);
+            }
+            if (freeMoves >= 3) {
+                window.draw(heart3);
+            }
+            if (sf::Joystick::isConnected(0)) {
+                window.draw(controllerSprite);
+                if (sf::Joystick::isButtonPressed(0, 1))
+                {
+                    window.draw(cancelSprite);
+                }
+                if (sf::Joystick::isButtonPressed(0, 0))
+                {
+                    window.draw(confirmSprite);
+                }
+            }
+
+            
+            
+            
+            
+           
+            
+        }
+        //--------------GAME-OVER---------------------------------------------------------------------------------------
+        if (gameOverState) {
+            if (sf::Joystick::isButtonPressed(0, 7)) {
+                mainGameState = 0;
+                startMenuState = 1;
+                gameOverState = 0;
+                startQuit = 0;
+            }
+            window.draw(gameOver);
         }
 
 
         window.display();
+        
     }
 }

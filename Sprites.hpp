@@ -8,6 +8,7 @@ sf::Texture texture_checkBack("checkBack.png");
 sf::Texture texture_clouds("clouds.png");
 sf::Texture texture_cloudsTwo("cloudsTwo.png");
 sf::Texture texture_logo("logo.png");
+sf::Texture texture_gameOver("gameOver.png");
 
 
 
@@ -39,6 +40,8 @@ inline const sf::IntRect selectTileRect({ 720, 120 }, { 120, 120 });
 inline const sf::IntRect vertTileRect({ 840, 120 }, { 120, 120 });
 inline const sf::IntRect horzTileRect({ 960, 120 }, { 120, 120 });
 inline const sf::IntRect crossTileRect({ 1080, 120 }, { 120, 120 });
+inline const sf::IntRect keyTileRect({ 720,240 }, { 120,120 });
+inline const sf::IntRect keyHoleTileRect({ 720,360 }, { 120,120 });
 
 //--------------------controller-mockup--200x200px--------------------
 inline const sf::IntRect controllerRect({ 0, 240 }, { 200, 200 });
@@ -49,7 +52,8 @@ inline const sf::IntRect cancelRect({ 400, 240 }, { 200, 200 });
 inline const sf::IntRect startRect({ 861, 265 }, { 339, 103 });
 inline const sf::IntRect quitRect({ 861, 377 }, { 339, 103 });
 
-//----------------------------------------------------------------------
+//----------------------Misc-------------------------------------------
+inline const sf::IntRect heartRect({ 600,240 }, { 25,25 });
 
 
 
@@ -102,9 +106,17 @@ inline sf::Sprite gameBoard(texture_gameBoard);
 inline sf::Sprite clouds(texture_clouds);
 inline sf::Sprite cloudsTwo(texture_cloudsTwo);
 inline sf::Sprite checkBackground(texture_checkBack);
+inline sf::Sprite gameOver(texture_gameOver);
 
 //--------------------misc-----------------------------------
 inline sf::Sprite logo(texture_logo);
+inline sf::Sprite heart(texture_atlas,heartRect);
+inline sf::Sprite heart2(texture_atlas, heartRect);
+
+inline sf::Sprite heart3(texture_atlas, heartRect);
+
+
+
 
 
 //=================================================
